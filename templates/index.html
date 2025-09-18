@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Voice Assistant</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap');
+        body { background-color: #121212; color: #e0e0e0; font-family: 'Roboto Mono', monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; text-align: center; }
+        .container { max-width: 600px; padding: 20px; }
+        #robot-assistant { width: 200px; height: 200px; cursor: pointer; border-radius: 50%; border: 3px solid #00c6ff; transition: all 0.3s ease; box-shadow: 0 0 15px #00c6ff; }
+        #robot-assistant.listening { animation: pulse 1.5s infinite; }
+        h1 { color: #ffffff; font-weight: 700; }
+        #status, #command-text { margin-top: 20px; font-size: 1.2em; min-height: 30px; }
+        #command-text { color: #00c6ff; font-weight: bold; }
+        @keyframes pulse { 0% { transform: scale(1); box-shadow: 0 0 15px #00c6ff; } 50% { transform: scale(1.05); box-shadow: 0 0 35px #00c6ff, 0 0 55px #00c6ff; } 100% { transform: scale(1); box-shadow: 0 0 15px #00c6ff; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="https://api.iconify.design/ph:robot-fill.svg?color=%2300c6ff" id="robot-assistant" alt="Robot Assistant">
+        <h1>AI Voice Assistant</h1>
+        <p id="status">Click the robot to give a command</p>
+        <p id="command-text"></p>
+    </div>
+
+    <script>
+        // Connect to the Python server
+        const socket = io();
+
+        const robotImg = document.getElementById('robot-assistant');
+        const statusText = document.getElementById('status');
+        const commandText = document.getElementById('command-text');
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        const synth = window.speechSynthesis;
+
+        function speak(text) {
+            if (synth.speaking) { return; }
+            const utterThis = new SpeechSynthesisUtterance(text);
+            synth.speak(utterThis);
+        }
+
+        // Listen for responses from the server
+        socket.on('response', function(msg) {
+            const responseText = msg.data;
+            statusText.textContent = responseText;
+            speak(responseText);
+        });
+
+        recognition.continuous = false;
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        robotImg.addEventListener('click', () => {
+            recognition.start();
+        });
+
+        recognition.onstart = () => {
+            robotImg.classList.add('listening');
+            statusText.textContent = 'Listening...';
+            commandText.textContent = '';
+        };
+
+        recognition.onresult = (event) => {
+            const command = event.results[0][0].transcript;
+            commandText.textContent = `You said: "${command}"`;
+            // Send the recognized command to the Python server
+            socket.emit('command', {data: command});
+        };
+        
+        recognition.onend = () => {
+            robotImg.classList.remove('listening');
+        };
+        
+        recognition.onerror = (event) => {
+            statusText.textContent = `Error occurred: ${event.error}. Try again.`;
+        };
+    </script>
+</body>
+</html>
