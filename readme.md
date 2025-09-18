@@ -27,8 +27,8 @@ It can be used as a personal assistant, answering queries, generating text, and 
 
 Clone the repository:
 ```bash
-git clone https://github.com/Timex9/LLM-CHATBPT.git
-cd LLM-CHATBPT
+git clone https://github.com/Timex9/AI-ASSISTANT.git
+cd AI VIRTUAL ASSISTANT
 python -m venv venv
 source venv/bin/activate   # for Mac/Linux
 venv\Scripts\activate      # for Windows
